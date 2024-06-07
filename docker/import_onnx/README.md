@@ -14,4 +14,4 @@ Build in x86 environment
 
 ## Run
 
-docker run -ti -v -v /LOCALDIR/shared:/opt/build/shared IMAGE:TAG
+docker run -ti -v /LOCALDIR/shared:/opt/build/shared IMAGE:TAG
