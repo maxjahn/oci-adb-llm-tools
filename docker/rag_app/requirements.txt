@@ -1,0 +1,7 @@
+chainlit
+langchain
+langchain-community
+langchain-openai
+langchain-huggingface
+oracledb
+python-dotenv
