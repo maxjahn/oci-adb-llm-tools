@@ -38,6 +38,8 @@ WITH TARGET ACCURACY 95;
 
 CREATE TABLE VECTOR.STOCK (
     REVIEW_ID NUMBER,
+    ITEM_NAME VARCHAR2 (512),
+    CATEGORY VARCHAR2(4000),
     LOCATION VARCHAR2 (128),
     STOCK INTEGER,
     RESTOCK_DATE DATE
@@ -51,12 +53,16 @@ TRUNCATE TABLE STOCK;
 
 INSERT INTO STOCK (
     REVIEW_ID,
+    ITEM_NAME,
+    CATEGORY,
     LOCATION,
     STOCK,
     RESTOCK_DATE
 )
     SELECT
         ID                                        AS REVIEW_ID,
+        NAME                                      AS ITEM_NAME,
+        CATEGORY                                  AS CATEGORY,
         'online'                                  AS LOCATION,
         TRUNC(DBMS_RANDOM.VALUE(1, 50))           AS STOCK,
         SYSDATE + TRUNC(DBMS_RANDOM.VALUE(0, 21)) AS RESTOCK_DATE
