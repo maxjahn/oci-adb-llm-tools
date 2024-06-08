@@ -27,25 +27,28 @@ RUN dnf upgrade -y && dnf install -y \
     ncurses-devel \
     && dnf clean all
 
+SHELL [ "/usr/bin/bash", "-c"]
+
 RUN mkdir /opt/build
 WORKDIR /opt/build
 
 COPY ./src/oml4py-client-linux-x86*.zip /opt/build/oml4py-client-linux-x86.zip
 COPY ./src/requirements.txt /opt/build/requirements.txt
 
+RUN python3 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
 RUN unzip /opt/build/oml4py-client-linux-x86.zip -d /opt/build/ && \
-    pip3.12 install pipenv && pipenv --python 3.12 && \
-    pipenv run pip3.12 install --no-cache-dir -r /opt/build/requirements.txt && \
+    pipenv run pip install --no-cache-dir -r /opt/build/requirements.txt && \
     pipenv run perl -Iclient client/client.pl -y
 
 RUN rm -rf /opt/build/.cache /opt/build/__pycache__
+RUN rm /opt/build/oml4py-client-linux-x86.zip
 
 RUN mkdir /opt/build/shared
 VOLUME /opt/build/shared
 
 COPY ./src/*.py /opt/build/
-
-RUN echo "source /root/.local/share/virtualenvs/build-*/bin/activate" >> /root/.bashrc
 
 ENTRYPOINT /bin/bash
 
