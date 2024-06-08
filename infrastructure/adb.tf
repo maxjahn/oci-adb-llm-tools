@@ -30,7 +30,10 @@ resource "oci_database_autonomous_database" "oci_database_autonomous_database" {
 	is_auto_scaling_for_storage_enabled = "false"
 	is_dedicated = "false"
 	is_free_tier = "true"
-	is_mtls_connection_required = "true"
+	is_mtls_connection_required = "false"
 	is_preview_version_with_service_terms_accepted = "false"
 	license_model = "LICENSE_INCLUDED"
+	whitelisted_ips = [
+		"0.0.0.0/0",
+	]
 }
