@@ -32,7 +32,7 @@ except Exception as e:
     print("Connection failed!")
     quit()
 
-embedder_params = {"provider": "database", "model": "ALL_MPNET_BASE_V2"}
+embedder_params = {"provider": "database", "model": "ALL_MPNET_BASE"}
 embedder = OracleEmbeddings(conn=connection, params=embedder_params)
 vs = OracleVS(
     embedding_function=embedder,
@@ -41,6 +41,7 @@ vs = OracleVS(
     distance_strategy=DistanceStrategy.DOT_PRODUCT,
 )
 
+llm = ChatOpenAI(model_name="gpt-4", temperature=0.8, streaming=True)
 
 @cl.on_chat_start
 async def on_chat_start():
@@ -74,7 +75,7 @@ async def on_chat_start():
     condense_question_prompt = PromptTemplate.from_template(template)
 
     chain = ConversationalRetrievalChain.from_llm(
-        ChatOpenAI(model_name="gpt-4", temperature=0.8, streaming=True),
+        llm,
         chain_type="stuff",
         retriever=vs.as_retriever(),
         condense_question_prompt=condense_question_prompt,
