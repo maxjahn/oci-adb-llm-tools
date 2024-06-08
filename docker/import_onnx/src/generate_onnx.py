@@ -8,12 +8,21 @@ parser.add_argument('-m', '--model',  nargs='+',
 parser.add_argument('-s', '--sequencelength',  nargs='*', type=int, 
                     help='sequence length for import of models with template')
 
+parser.add_argument('-l', '--list-models',  nargs='*', type=bool, 
+                    help='list pretrained models available')
+
+
+
 args = parser.parse_args()
 
 models = args.model
 sequence_length = args.sequencelength
 
 pretrained_models = EmbeddingModelConfig.show_preconfigured()
+
+if args.list_models:
+        print(pretrained_models)
+        quit()
 
 i = -1
 
