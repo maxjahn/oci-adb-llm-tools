@@ -1,7 +1,8 @@
 #!/opt/venv/bin/python
 
-from oml.utils import EmbeddingModel, EmbeddingModelConfig
 import argparse
+
+from oml.utils import EmbeddingModel, EmbeddingModelConfig
 
 parser = argparse.ArgumentParser(description="Convert Huggingface models to ONNX")
 parser.add_argument(
