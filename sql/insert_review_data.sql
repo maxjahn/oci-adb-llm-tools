@@ -1,4 +1,4 @@
-truncate table reviews;
+TRUNCATE TABLE REVIEWS;
 
 INSERT INTO REVIEWS (
 	ID,
@@ -19,6 +19,7 @@ INSERT INTO REVIEWS (
 		DESCRIPTION
 	FROM
 		SCOTCH_REVIEWS;
+
 --where rownum <= 50;
 
 COMMIT;

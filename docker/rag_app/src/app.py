@@ -12,41 +12,44 @@ from langchain_community.vectorstores.oraclevs import OracleVS
 from langchain_community.vectorstores.utils import DistanceStrategy
 from langchain_community.chat_message_histories import ChatMessageHistory
 
-from langchain.chains import ( ConversationalRetrievalChain ) 
+from langchain.chains import ConversationalRetrievalChain
 
 import chainlit as cl
 
 import oracledb
 
-adb_dsn = os.environ['ADB_CS']
-adb_username = os.environ['ADB_USERNAME']
-adb_password = os.environ['ADB_PASSWORD']
+adb_dsn = os.environ["ADB_CS"]
+adb_username = os.environ["ADB_USERNAME"]
+adb_password = os.environ["ADB_PASSWORD"]
 
 show_sources = False
 
 try:
-    connection=oracledb.connect(
-     user=adb_username,
-     password=adb_password,
-     dsn=adb_dsn)
+    connection = oracledb.connect(user=adb_username, password=adb_password, dsn=adb_dsn)
     print("Connection successful!")
-    
+
 except Exception as e:
     print("Connection failed!")
     quit()
-    
+
 embedder_params = {"provider": "database", "model": "ALL_MPNET_BASE_V2"}
 embedder = OracleEmbeddings(conn=connection, params=embedder_params)
-vs = OracleVS(embedding_function=embedder, client=connection, table_name="reviews_vs", distance_strategy=DistanceStrategy.DOT_PRODUCT)
+vs = OracleVS(
+    embedding_function=embedder,
+    client=connection,
+    table_name="reviews_vs",
+    distance_strategy=DistanceStrategy.DOT_PRODUCT,
+)
+
 
 @cl.on_chat_start
 async def on_chat_start():
-    
+
     await cl.Avatar(
         name="Nepomuk",
         url="/public/logo_dark.png",
     ).send()
-    
+
     message_history = ChatMessageHistory()
 
     memory = ConversationBufferMemory(
@@ -55,7 +58,7 @@ async def on_chat_start():
         chat_memory=message_history,
         return_messages=True,
     )
-   
+
     # Define your system instruction
     system_instruction = "You're a seasoned and experienced whisky expert. You're very knowledgeable about whisky. You're here to answer any whisky-related. You style of speaking resembles that of a seasoned barkeeper in a pub."
 
@@ -82,7 +85,7 @@ async def on_chat_start():
     )
 
     cl.user_session.set("chain", chain)
-    
+
 
 @cl.on_message
 async def on_message(message: cl.Message):
@@ -96,10 +99,10 @@ async def on_message(message: cl.Message):
     text_elements = []  # type: List[cl.Text]
 
     if show_sources:
-    
+
         if source_documents:
             for source_idx, source_doc in enumerate(source_documents):
-                
+
                 source_name = f"[{source_idx}]"
                 # Create the text element referenced in the message
                 text_elements.append(
@@ -114,4 +117,3 @@ async def on_message(message: cl.Message):
                 answer += "\nNo sources found"
 
     await cl.Message(content=answer, elements=text_elements, author="Nepomuk").send()
-

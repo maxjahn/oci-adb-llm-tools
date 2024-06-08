@@ -1,11 +1,11 @@
 BEGIN
-    DBMS_SCHEDULER.create_job (
-        job_name        => 'job_update_reviews_vs',
-        job_type        => 'PLSQL_BLOCK',
-        job_action      => 'BEGIN prc_update_reviews_vs; END;',
-        start_date      => SYSTIMESTAMP,
-        repeat_interval => 'FREQ=DAILY; BYHOUR=0; BYMINUTE=0; BYSECOND=0',
-        enabled         => TRUE
+    DBMS_SCHEDULER.CREATE_JOB (
+        JOB_NAME => 'job_update_reviews_vs',
+        JOB_TYPE => 'PLSQL_BLOCK',
+        JOB_ACTION => 'BEGIN prc_update_reviews_vs; END;',
+        START_DATE => SYSTIMESTAMP,
+        REPEAT_INTERVAL => 'FREQ=DAILY; BYHOUR=0; BYMINUTE=0; BYSECOND=0',
+        ENABLED => TRUE
     );
 END;
 /

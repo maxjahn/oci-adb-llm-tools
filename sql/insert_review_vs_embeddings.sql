@@ -1,63 +1,85 @@
 DECLARE
-
-    v_index number := 0;
-    v_step number := 50;
-    v_upper_limit number := 2500;
-    v_code  NUMBER;
-    v_errm  VARCHAR2(64);
-    v_embedding_model VARCHAR2(64);
-
+    V_INDEX           NUMBER := 0;
+    V_STEP            NUMBER := 50;
+    V_UPPER_LIMIT     NUMBER := 2500;
+    V_CODE            NUMBER;
+    V_ERRM            VARCHAR2(64);
+    V_EMBEDDING_MODEL VARCHAR2(64);
 BEGIN
-
-    SELECT value_text INTO v_embedding_model FROM CONFIG_EMBEDDINGS where config = 'EMBEDDING_MODEL';
-
-    delete from reviews_vs vs where vs.document_id between v_index and v_upper_limit;
-    commit;
-    
-    WHILE v_index < v_upper_limit LOOP
-
-        DBMS_OUTPUT.PUT_LINE('creating embeddings for IDs '|| v_index || ' to ' || (v_index+v_step) );
-
+    SELECT
+        VALUE_TEXT INTO V_EMBEDDING_MODEL
+    FROM
+        CONFIG_EMBEDDINGS
+    WHERE
+        CONFIG = 'EMBEDDING_MODEL';
+    DELETE FROM REVIEWS_VS VS
+    WHERE
+        VS.DOCUMENT_ID BETWEEN V_INDEX AND V_UPPER_LIMIT;
+    COMMIT;
+    WHILE V_INDEX < V_UPPER_LIMIT LOOP
+        DBMS_OUTPUT.PUT_LINE('creating embeddings for IDs '
+                             || V_INDEX
+                             || ' to '
+                             || (V_INDEX+V_STEP) );
         BEGIN
-
-            insert into reviews_vs (document_id, document_name, text, metadata, embedding, embedding_model)
-            SELECT r.id as document_id,
-            r.name as document_name,
-            '*Whisky Name: '||r.name ||'*\n' || JSON_VALUE(C.column_value, '$.chunk_data') AS text,
-            json('{"document_id" : "' || r.id || '", "_rowid" : "' || r.rowid || '"}') as metadata,
-            dbms_vector.utl_to_embedding(JSON_VALUE(C.column_value, '$.chunk_data'), json('{"provider":"database", "model":"' || v_embedding_model || '"}')) as embedding,
-            v_embedding_model as embedding_model            
-            FROM reviews r,
-            dbms_vector.utl_to_chunks(r.description,
-            JSON('{"by":"words",
+            INSERT INTO REVIEWS_VS (
+                DOCUMENT_ID,
+                DOCUMENT_NAME,
+                TEXT,
+                METADATA,
+                EMBEDDING,
+                EMBEDDING_MODEL
+            )
+                SELECT
+                    R.ID                                                                                    AS DOCUMENT_ID,
+                    R.NAME                                                                                  AS DOCUMENT_NAME,
+                    '*Whisky Name: '
+                    ||R.NAME
+                    ||'*\n'
+                    || JSON_VALUE(C.COLUMN_VALUE, '$.chunk_data')                                           AS TEXT,
+                    JSON('{"document_id" : "'
+                         || R.ID
+                         || '", "_rowid" : "'
+                         || R.ROWID
+                         || '"}')                                                                           AS METADATA,
+                    DBMS_VECTOR.UTL_TO_EMBEDDING(JSON_VALUE(C.COLUMN_VALUE, '$.chunk_data'), JSON('{"provider":"database", "model":"'
+                                                                                                  || V_EMBEDDING_MODEL
+                                                                                                  || '"}')) AS EMBEDDING,
+                    V_EMBEDDING_MODEL                                                                       AS EMBEDDING_MODEL
+                FROM
+                    REVIEWS                   R,
+                    DBMS_VECTOR.UTL_TO_CHUNKS(R.DESCRIPTION,
+                    JSON('{"by":"words",
                     "max":"200",
                     "overlap":"20",
                     "split":"recursively",
-                    "normalize":"all"}')
-             ) C
-           where r.id between (v_index + 1 ) and (v_index + v_step);
-
-            commit;
+                    "normalize":"all"}') ) C
+                WHERE
+                    R.ID BETWEEN (V_INDEX + 1 ) AND (V_INDEX + V_STEP);
+            COMMIT;
         EXCEPTION
             WHEN OTHERS THEN
-                v_code := SQLCODE;
-                v_errm := SUBSTR(SQLERRM, 1, 64);
-                DBMS_OUTPUT.PUT_LINE('Error when processing ID '||v_index || ', Error code ' || v_code || ': ' || v_errm);
+                V_CODE := SQLCODE;
+                V_ERRM := SUBSTR(SQLERRM, 1, 64);
+                DBMS_OUTPUT.PUT_LINE('Error when processing ID '
+                                     ||V_INDEX
+                                     || ', Error code '
+                                     || V_CODE
+                                     || ': '
+                                     || V_ERRM);
         END;
 
-        v_index := v_index + v_step;
+        V_INDEX := V_INDEX + V_STEP;
     END LOOP;
 
-    commit;
-
-    EXCEPTION
-        WHEN OTHERS THEN
-            v_code := SQLCODE;
-            v_errm := SUBSTR(SQLERRM, 1, 64);
-            DBMS_OUTPUT.PUT_LINE('Error code ' || v_code || ': ' || v_errm);
-
+    COMMIT;
+EXCEPTION
+    WHEN OTHERS THEN
+        V_CODE := SQLCODE;
+        V_ERRM := SUBSTR(SQLERRM, 1, 64);
+        DBMS_OUTPUT.PUT_LINE('Error code '
+                             || V_CODE
+                             || ': '
+                             || V_ERRM);
 END;
 /
-
-
-
