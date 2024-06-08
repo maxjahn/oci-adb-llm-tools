@@ -64,7 +64,7 @@ INSERT INTO STOCK (
         NAME                                      AS ITEM_NAME,
         CATEGORY                                  AS CATEGORY,
         'online'                                  AS LOCATION,
-        TRUNC(DBMS_RANDOM.VALUE(1, 50))           AS STOCK,
+        TRUNC(DBMS_RANDOM.VALUE(0, 20))           AS STOCK,
         SYSDATE + TRUNC(DBMS_RANDOM.VALUE(0, 21)) AS RESTOCK_DATE
     FROM
         REVIEWS R
