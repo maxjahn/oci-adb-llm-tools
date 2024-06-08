@@ -35,8 +35,10 @@ COPY ./src/requirements.txt /opt/build/requirements.txt
 
 RUN unzip /opt/build/oml4py-client-linux-x86.zip -d /opt/build/ && \
     pip3.12 install pipenv && pipenv --python 3.12 && \
-    pipenv run pip3.12 install -r /opt/build/requirements.txt && \
+    pipenv run pip3.12 install --no-cache-dir -r /opt/build/requirements.txt && \
     pipenv run perl -Iclient client/client.pl -y
+
+RUN rm -rf /opt/build/.cache /opt/build/__pycache__
 
 RUN mkdir /opt/build/shared
 VOLUME /opt/build/shared
