@@ -1,3 +1,5 @@
+#!/opt/venv/bin/python
+
 from oml.utils import EmbeddingModel, EmbeddingModelConfig
 import argparse
 
@@ -22,6 +24,11 @@ if args.list_models:
         for model in pretrained_models: 
                 print(model)
         quit()
+
+if not args.model:
+        print("no model specified!")
+        quit()
+
 
 i = -1
 
