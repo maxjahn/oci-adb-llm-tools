@@ -1,5 +1,24 @@
 truncate table reviews;
-insert into reviews (id, name, category, rating, price, currency, description)
-select id, name, category, rating, price, currency, description from SCOTCH_REVIEWS
-where rownum <= 50;
+
+INSERT INTO REVIEWS (
+	ID,
+	NAME,
+	CATEGORY,
+	RATING,
+	PRICE,
+	CURRENCY,
+	DESCRIPTION
+)
+	SELECT
+		ID,
+		NAME,
+		CATEGORY,
+		RATING,
+		PRICE,
+		CURRENCY,
+		DESCRIPTION
+	FROM
+		SCOTCH_REVIEWS;
+--where rownum <= 50;
+
 COMMIT;
