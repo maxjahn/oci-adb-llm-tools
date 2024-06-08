@@ -11,8 +11,6 @@ parser.add_argument('-s', '--sequencelength',  nargs='*', type=int,
 parser.add_argument('-l', '--list-models',  action="store_true", 
                     help='list pretrained models available')
 
-
-
 args = parser.parse_args()
 
 models = args.model

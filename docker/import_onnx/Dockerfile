@@ -35,12 +35,12 @@ WORKDIR /opt/build
 COPY ./src/oml4py-client-linux-x86*.zip /opt/build/oml4py-client-linux-x86.zip
 COPY ./src/requirements.txt /opt/build/requirements.txt
 
-RUN python3 -m venv /opt/venv
+RUN python3.12 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 RUN unzip /opt/build/oml4py-client-linux-x86.zip -d /opt/build/ && \
-    pipenv run pip install --no-cache-dir -r /opt/build/requirements.txt && \
-    pipenv run perl -Iclient client/client.pl -y
+    pip3.12 install --no-cache-dir -r /opt/build/requirements.txt && \
+    perl -Iclient client/client.pl -y
 
 RUN rm -rf /opt/build/.cache /opt/build/__pycache__
 RUN rm /opt/build/oml4py-client-linux-x86.zip
