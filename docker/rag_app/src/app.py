@@ -7,6 +7,9 @@ from langchain.memory import ConversationBufferMemory
 
 from langchain_openai import ChatOpenAI
 
+import oci
+from langchain_community.llms import OCIGenAI
+
 from langchain_community.embeddings.oracleai import OracleEmbeddings
 from langchain_community.vectorstores.oraclevs import OracleVS
 from langchain_community.vectorstores.utils import DistanceStrategy
@@ -15,6 +18,9 @@ from langchain_community.chat_message_histories import ChatMessageHistory
 from langchain.chains import ConversationalRetrievalChain
 
 import chainlit as cl
+from chainlit.action import Action
+from chainlit.input_widget import Select, Switch, Slider
+
 
 import oracledb
 
@@ -41,10 +47,37 @@ vs = OracleVS(
     distance_strategy=DistanceStrategy.DOT_PRODUCT,
 )
 
-llm = ChatOpenAI(model_name="gpt-4", temperature=0.8, streaming=True)
 
 @cl.on_chat_start
-async def on_chat_start():
+async def start():
+    settings = await cl.ChatSettings(
+        [
+            Select(
+                id="Model",
+                label="Model",
+                values=[
+                    "gpt-4",
+                    "gpt-3.5",
+                    "gpt-3.5-turbo",
+                ],
+                initial_index=0,
+            )
+        ]
+    ).send()
+    await setup_agent(settings)
+
+
+@cl.on_settings_update
+async def setup_agent(settings):
+
+    if settings["Model"].startswith("gpt"):
+        llm = ChatOpenAI(model_name=settings["Model"], temperature=0.8, streaming=True)
+    else:
+        llm = OCIGenAI(
+            model_id=settings["Model"],
+            service_endpoint=os.environ["OCI_GENAI_ENDPOINT"],
+            compartment_id=os.environ["OCI_COMPARTMENT_ID"],
+        )
 
     await cl.Avatar(
         name="Nepomuk",
