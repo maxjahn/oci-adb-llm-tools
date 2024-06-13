@@ -8,6 +8,7 @@ from langchain.memory import ConversationBufferMemory
 from langchain_openai import ChatOpenAI
 
 import oci
+from oci.config import validate_config
 from langchain_community.llms import OCIGenAI
 
 from langchain_community.embeddings.oracleai import OracleEmbeddings
@@ -59,6 +60,8 @@ async def start():
                     "gpt-4",
                     "gpt-3.5",
                     "gpt-3.5-turbo",
+                    "cohere.command",
+                    "meta.llama-2-70b-chat",
                 ],
                 initial_index=0,
             )
@@ -73,10 +76,21 @@ async def setup_agent(settings):
     if settings["Model"].startswith("gpt"):
         llm = ChatOpenAI(model_name=settings["Model"], temperature=0.8, streaming=True)
     else:
+        config = {
+            "user": os.environ["OCI_CONFIG_USER"],
+            "key_content": os.environ["OCI_CONFIG_KEY_CONTENT"],
+            "fingerprint": os.environ["OCI_CONFIG_FINGERPRINT"],
+            "tenancy": os.environ["OCI_CONFIG_TENANCY"],
+            "region": os.environ["OCI_CONFIG_REGION"],
+        }
+
+        validate_config(config)
+
         llm = OCIGenAI(
             model_id=settings["Model"],
             service_endpoint=os.environ["OCI_GENAI_ENDPOINT"],
             compartment_id=os.environ["OCI_COMPARTMENT_ID"],
+            model_kwargs={"max_tokens": 4000},
         )
 
     await cl.Avatar(
