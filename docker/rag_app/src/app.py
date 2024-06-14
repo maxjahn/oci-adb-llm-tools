@@ -28,13 +28,10 @@ import oracledb
 EMBEDDINGS_MODEL = "ALL_MPNET_BASE"
 SHOW_SOURCE = False
 
+vs = connect_to_oracle_vectorstore()
 
 @cl.on_chat_start
 async def start():
-
-    
-
-
     settings = await cl.ChatSettings(
         [
             Select(
@@ -54,53 +51,14 @@ async def start():
     await setup_agent(settings)
 
 
-def connect_to_oracle_vectorstore():
-    # Connect to the database for embeddings
-    try:
-        connection = oracledb.connect(user=os.environ["ADB_USERNAME"], password=os.environ["ADB_PASSWORD"], dsn=os.environ["ADB_CS"])
-        print("Connection successful!")
-
-    except Exception as e:
-        print("Connection failed!")
-        quit()
-
-    embedder_params = {"provider": "database", "model": EMBEDDINGS_MODEL}
-    embedder = OracleEmbeddings(conn=connection, params=embedder_params)
-    vs = OracleVS(
-        embedding_function=embedder,
-        client=connection,
-        table_name="reviews_vs",
-        distance_strategy=DistanceStrategy.DOT_PRODUCT,
-    )
-    return vs
-
-
 @cl.on_settings_update
 async def setup_agent(settings):
-
-    vs = connect_to_oracle_vectorstore()
 
     # pick llm as per the model selected
     if settings["Model"].startswith("gpt"):
         llm = ChatOpenAI(model_name=settings["Model"], temperature=0.8, streaming=True)
     else:
-        config = {
-            "user": os.environ["OCI_CONFIG_USER"],
-            "key_content": os.environ["OCI_CONFIG_KEY_CONTENT"],
-            "fingerprint": os.environ["OCI_CONFIG_FINGERPRINT"],
-            "tenancy": os.environ["OCI_CONFIG_TENANCY"],
-            "region": os.environ["OCI_CONFIG_REGION"],
-        }
-
-        validate_config(config)
-
-        llm = OCIGenAI(
-            model_id=settings["Model"],
-            service_endpoint=os.environ["OCI_GENAI_ENDPOINT"],
-            compartment_id=os.environ["OCI_COMPARTMENT_ID"],
-            model_kwargs={"max_tokens": 4000},
-            streaming=True,
-        )
+        llm = initialize_OCIGenAI(settings)
 
     await cl.Avatar(
         name="Nepomuk",
@@ -178,5 +136,65 @@ async def on_message(message: cl.Message):
                 answer += "\nNo sources found"
 
     await cl.Message(content=answer, elements=text_elements, author="Nepomuk").send()
+
+
+
+
+def initialize_OCIGenAI(settings):
+    config = {
+            "user": os.environ["OCI_CONFIG_USER"],
+            "key_content": os.environ["OCI_CONFIG_KEY_CONTENT"],
+            "fingerprint": os.environ["OCI_CONFIG_FINGERPRINT"],
+            "tenancy": os.environ["OCI_CONFIG_TENANCY"],
+            "region": os.environ["OCI_CONFIG_REGION"],
+        }
+
+    validate_config(config)
+
+    llm = OCIGenAI(
+            model_id=settings["Model"],
+            service_endpoint=os.environ["OCI_GENAI_ENDPOINT"],
+            compartment_id=os.environ["OCI_COMPARTMENT_ID"],
+            model_kwargs={"max_tokens": 4000},
+            streaming=True,
+        )
+    
+    return llm
+
+
+def connect_to_oracle_vectorstore():
+    """
+    Connect to the Oracle database for embeddings.
+
+    Parameters:
+    None
+
+    Returns:
+    OracleVS: An instance of OracleVS, which is a vector store that uses Oracle's database for embeddings.
+
+    Raises:
+    Exception: If the connection to the Oracle database fails.
+
+    This function connects to the Oracle database using the provided environment variables for username, password, and connection string. It then creates an instance of OracleEmbeddings using the Oracle database as the provider and the specified model. Finally, it creates an instance of OracleVS using the embedding function, Oracle database client, table name, and distance strategy.
+    """
+
+    try:
+        connection = oracledb.connect(user=os.environ["ADB_USERNAME"], password=os.environ["ADB_PASSWORD"], dsn=os.environ["ADB_CS"])
+        print("Connection successful!")
+
+    except Exception as e:
+        print("Connection failed!")
+        quit()
+
+    embedder_params = {"provider": "database", "model": EMBEDDINGS_MODEL}
+    embedder = OracleEmbeddings(conn=connection, params=embedder_params)
+    vs = OracleVS(
+        embedding_function=embedder,
+        client=connection,
+        table_name="reviews_vs",
+        distance_strategy=DistanceStrategy.DOT_PRODUCT,
+    )
+    return vs
+
 
 
