@@ -7,10 +7,6 @@ from langchain.memory import ConversationBufferMemory
 
 from langchain_openai import ChatOpenAI
 
-import oci
-from oci.config import validate_config
-from langchain_community.llms import OCIGenAI
-
 from langchain_community.embeddings.oracleai import OracleEmbeddings
 from langchain_community.vectorstores.oraclevs import OracleVS
 from langchain_community.vectorstores.utils import DistanceStrategy
@@ -28,7 +24,22 @@ import oracledb
 EMBEDDINGS_MODEL = "ALL_MPNET_BASE"
 SHOW_SOURCE = False
 
-vs = connect_to_oracle_vectorstore()
+try:
+    connection = oracledb.connect(user=os.environ["ADB_USERNAME"], password=os.environ["ADB_PASSWORD"], dsn=os.environ["ADB_CS"])
+    print("Connection successful!")
+
+except Exception as e:
+    print("Connection failed!")
+    quit()
+
+embedder_params = {"provider": "database", "model": EMBEDDINGS_MODEL}
+embedder = OracleEmbeddings(conn=connection, params=embedder_params)
+vs = OracleVS(
+    embedding_function=embedder,
+    client=connection,
+    table_name="reviews_vs",
+    distance_strategy=DistanceStrategy.DOT_PRODUCT,
+)
 
 @cl.on_chat_start
 async def start():
@@ -41,8 +52,6 @@ async def start():
                     "gpt-4",
                     "gpt-3.5",
                     "gpt-3.5-turbo",
-                    "cohere.command",
-                    "meta.llama-2-70b-chat",
                 ],
                 initial_index=0,
             )
@@ -54,11 +63,7 @@ async def start():
 @cl.on_settings_update
 async def setup_agent(settings):
 
-    # pick llm as per the model selected
-    if settings["Model"].startswith("gpt"):
-        llm = ChatOpenAI(model_name=settings["Model"], temperature=0.8, streaming=True)
-    else:
-        llm = initialize_OCIGenAI(settings)
+    llm = ChatOpenAI(model_name=settings["Model"], temperature=0.8, streaming=True)
 
     await cl.Avatar(
         name="Nepomuk",
@@ -140,61 +145,7 @@ async def on_message(message: cl.Message):
 
 
 
-def initialize_OCIGenAI(settings):
-    config = {
-            "user": os.environ["OCI_CONFIG_USER"],
-            "key_content": os.environ["OCI_CONFIG_KEY_CONTENT"],
-            "fingerprint": os.environ["OCI_CONFIG_FINGERPRINT"],
-            "tenancy": os.environ["OCI_CONFIG_TENANCY"],
-            "region": os.environ["OCI_CONFIG_REGION"],
-        }
 
-    validate_config(config)
-
-    llm = OCIGenAI(
-            model_id=settings["Model"],
-            service_endpoint=os.environ["OCI_GENAI_ENDPOINT"],
-            compartment_id=os.environ["OCI_COMPARTMENT_ID"],
-            model_kwargs={"max_tokens": 4000},
-            streaming=True,
-        )
-    
-    return llm
-
-
-def connect_to_oracle_vectorstore():
-    """
-    Connect to the Oracle database for embeddings.
-
-    Parameters:
-    None
-
-    Returns:
-    OracleVS: An instance of OracleVS, which is a vector store that uses Oracle's database for embeddings.
-
-    Raises:
-    Exception: If the connection to the Oracle database fails.
-
-    This function connects to the Oracle database using the provided environment variables for username, password, and connection string. It then creates an instance of OracleEmbeddings using the Oracle database as the provider and the specified model. Finally, it creates an instance of OracleVS using the embedding function, Oracle database client, table name, and distance strategy.
-    """
-
-    try:
-        connection = oracledb.connect(user=os.environ["ADB_USERNAME"], password=os.environ["ADB_PASSWORD"], dsn=os.environ["ADB_CS"])
-        print("Connection successful!")
-
-    except Exception as e:
-        print("Connection failed!")
-        quit()
-
-    embedder_params = {"provider": "database", "model": EMBEDDINGS_MODEL}
-    embedder = OracleEmbeddings(conn=connection, params=embedder_params)
-    vs = OracleVS(
-        embedding_function=embedder,
-        client=connection,
-        table_name="reviews_vs",
-        distance_strategy=DistanceStrategy.DOT_PRODUCT,
-    )
-    return vs
 
 
 
