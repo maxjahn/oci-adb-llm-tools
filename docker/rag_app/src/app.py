@@ -22,35 +22,19 @@ import chainlit as cl
 from chainlit.action import Action
 from chainlit.input_widget import Select, Switch, Slider
 
-
 import oracledb
 
-adb_dsn = os.environ["ADB_CS"]
-adb_username = os.environ["ADB_USERNAME"]
-adb_password = os.environ["ADB_PASSWORD"]
 
-show_sources = False
-
-try:
-    connection = oracledb.connect(user=adb_username, password=adb_password, dsn=adb_dsn)
-    print("Connection successful!")
-
-except Exception as e:
-    print("Connection failed!")
-    quit()
-
-embedder_params = {"provider": "database", "model": "ALL_MPNET_BASE"}
-embedder = OracleEmbeddings(conn=connection, params=embedder_params)
-vs = OracleVS(
-    embedding_function=embedder,
-    client=connection,
-    table_name="reviews_vs",
-    distance_strategy=DistanceStrategy.DOT_PRODUCT,
-)
+EMBEDDINGS_MODEL = "ALL_MPNET_BASE"
+SHOW_SOURCE = False
 
 
 @cl.on_chat_start
 async def start():
+
+    
+
+
     settings = await cl.ChatSettings(
         [
             Select(
@@ -70,9 +54,33 @@ async def start():
     await setup_agent(settings)
 
 
+def connect_to_oracle_vectorstore():
+    # Connect to the database for embeddings
+    try:
+        connection = oracledb.connect(user=os.environ["ADB_USERNAME"], password=os.environ["ADB_PASSWORD"], dsn=os.environ["ADB_CS"])
+        print("Connection successful!")
+
+    except Exception as e:
+        print("Connection failed!")
+        quit()
+
+    embedder_params = {"provider": "database", "model": EMBEDDINGS_MODEL}
+    embedder = OracleEmbeddings(conn=connection, params=embedder_params)
+    vs = OracleVS(
+        embedding_function=embedder,
+        client=connection,
+        table_name="reviews_vs",
+        distance_strategy=DistanceStrategy.DOT_PRODUCT,
+    )
+    return vs
+
+
 @cl.on_settings_update
 async def setup_agent(settings):
 
+    vs = connect_to_oracle_vectorstore()
+
+    # pick llm as per the model selected
     if settings["Model"].startswith("gpt"):
         llm = ChatOpenAI(model_name=settings["Model"], temperature=0.8, streaming=True)
     else:
@@ -91,6 +99,7 @@ async def setup_agent(settings):
             service_endpoint=os.environ["OCI_GENAI_ENDPOINT"],
             compartment_id=os.environ["OCI_COMPARTMENT_ID"],
             model_kwargs={"max_tokens": 4000},
+            streaming=True,
         )
 
     await cl.Avatar(
@@ -121,17 +130,22 @@ async def setup_agent(settings):
     # Create the prompt template
     condense_question_prompt = PromptTemplate.from_template(template)
 
+    retriever = vs.as_retriever()
+    
+    # TODO: rewrite in LCEL 
+    # chain = condense_question_prompt | retriever | llm | memory | cl.Text()
+
     chain = ConversationalRetrievalChain.from_llm(
         llm,
         chain_type="stuff",
-        retriever=vs.as_retriever(),
+        retriever=retriever,
         condense_question_prompt=condense_question_prompt,
         memory=memory,
         return_source_documents=True,
         return_generated_question=True,
         rephrase_question=True,
     )
-
+    
     cl.user_session.set("chain", chain)
 
 
@@ -146,8 +160,7 @@ async def on_message(message: cl.Message):
 
     text_elements = []  # type: List[cl.Text]
 
-    if show_sources:
-
+    if SHOW_SOURCE:
         if source_documents:
             for source_idx, source_doc in enumerate(source_documents):
 
@@ -165,3 +178,5 @@ async def on_message(message: cl.Message):
                 answer += "\nNo sources found"
 
     await cl.Message(content=answer, elements=text_elements, author="Nepomuk").send()
+
+
