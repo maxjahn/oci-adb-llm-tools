@@ -1,37 +1,19 @@
 import os
 
-# from typing import List
-
-# from langchain_core.documents import Document
-# from langchain.prompts import PromptTemplate
-# from langchain.memory import ConversationBufferMemory
-
-from langchain_openai import ChatOpenAI
-
-# from langchain import hub
-
 from langchain_community.embeddings.oracleai import OracleEmbeddings
 from langchain_community.vectorstores.oraclevs import OracleVS
 from langchain_community.vectorstores.utils import DistanceStrategy
 
-# from langchain_community.chat_message_histories import ChatMessageHistory
-
-# from langchain.chains import ConversationalRetrievalChain
-
-# from langchain.prompts import ChatPromptTemplate
-from langchain.schema import StrOutputParser
-
-# from langchain.schema.runnable import Runnable
 from langchain.schema.runnable.config import RunnableConfig
-
-from langchain.chains import create_history_aware_retriever
-
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-
 from langchain_core.runnables import (
     RunnableLambda,
     RunnablePassthrough,
 )
+from langchain.schema import StrOutputParser
+from langchain.chains import create_history_aware_retriever
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+
+from langchain_openai import ChatOpenAI
 
 import chainlit as cl
 from chainlit.input_widget import Select
