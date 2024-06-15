@@ -162,8 +162,6 @@ cython_debug/
 #.idea/
 docker/rag_app/.chainlit/config.toml
 docker/rag_app/.chainlit/translations/en-US.json
-docker/rag_app/src/.chainlit/config.toml
-docker/rag_app/src/.chainlit/translations/en-US.json
 docker/rag_app_openai/src/.chainlit/config.toml
 docker/rag_app_openai/src/.chainlit/translations/en-US.json
 docker/rag_app/Pipfile.lock
