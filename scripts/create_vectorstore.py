@@ -15,6 +15,7 @@ from langchain_core.documents import Document
 adb_dsn = os.environ["ADB_CS"]
 adb_username = os.environ["ADB_USERNAME"]
 adb_password = os.environ["ADB_PASSWORD"]
+embedding_model = "ALL_MPNET_BASE_V2"
 
 try:
     connection = oracledb.connect(user=adb_username, password=adb_password, dsn=adb_dsn)
@@ -24,11 +25,10 @@ except Exception as e:
     print("Connection failed!")
     quit()
 
-embedder_params = {"provider": "database", "model": "ALL_MPNET_BASE_V2"}
+embedder_params = {"provider": "database", "model": embedding_model}
 embedder = OracleEmbeddings(conn=connection, params=embedder_params)
 
 # create Oracle AI Vector Store
-
 loader_params = {
     "owner": "vector",
     "tablename": "reviews",

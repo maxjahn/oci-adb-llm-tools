@@ -163,3 +163,7 @@ cython_debug/
 
 docker/rag_app/Pipfile.lock
 docker/rag_app/Pipfile
+docker/rag_app/.chainlit/config.toml
+scripts/create_vectorstore.py
+
+Pipfile
