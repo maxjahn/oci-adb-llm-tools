@@ -1,5 +1,7 @@
 chainlit
 langchain
+langchainhub
+langchain-core
 langchain-community
 langchain-openai
 oracledb
