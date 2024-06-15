@@ -1,34 +1,30 @@
 import os
-from typing import List
-
-from langchain_core.documents import Document
-from langchain.prompts import PromptTemplate
-from langchain.memory import ConversationBufferMemory
-
-from langchain_openai import ChatOpenAI
-
-import oci
-from oci.config import validate_config
-from langchain_community.llms import OCIGenAI
 
 from langchain_community.embeddings.oracleai import OracleEmbeddings
 from langchain_community.vectorstores.oraclevs import OracleVS
 from langchain_community.vectorstores.utils import DistanceStrategy
-from langchain_community.chat_message_histories import ChatMessageHistory
 
-from langchain.chains import ConversationalRetrievalChain
+from langchain.schema.runnable.config import RunnableConfig
+from langchain_core.runnables import (
+    RunnableLambda,
+    RunnablePassthrough,
+)
+from langchain.schema import StrOutputParser
+from langchain.chains import create_history_aware_retriever
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+
+from langchain_openai import ChatOpenAI
 
 import chainlit as cl
-from chainlit.action import Action
-from chainlit.input_widget import Select, Switch, Slider
+from chainlit.input_widget import Select
 
 import oracledb
 
+from langchain_community.llms import OCIGenAI
 
 EMBEDDINGS_MODEL = "ALL_MPNET_BASE"
-SHOW_SOURCE = False
+LLM_MEMORY_SIZE = 25
 
-vs = connect_to_oracle_vectorstore()
 
 @cl.on_chat_start
 async def start():
@@ -48,7 +44,34 @@ async def start():
             )
         ]
     ).send()
+
     await setup_agent(settings)
+
+
+@cl.set_starters
+async def set_starters():
+    return [
+        cl.Starter(
+            label="The history of scotch whisky",
+            message="Give me a brief overview of the history of scotch whisky. Try to include at least one funny anecdote.",
+            icon="/public/history.svg",
+        ),
+        cl.Starter(
+            label="Cocktail recipes that are based on whisky",
+            message="I'm looking for some new cocktail recipes to try that are based on Scotch Whisky. Can you recommend a few that are easy to make at home?",
+            icon="/public/cocktail.svg",
+        ),
+        cl.Starter(
+            label="Whisky tasting introduction tips",
+            message="I'm new to whisky tasting and would like to learn more about it. Can you give me a brief introduction to whisky tasting? Please add some recommendations which whiskies I should try? Please consider international whiskies for beginners too.",
+            icon="/public/tasting.svg",
+        ),
+        cl.Starter(
+            label="Food to go with whisky",
+            message="Please recommend a few foods that I can serve together with Scotch Whisky. Try to include a few that are easy to make at home.",
+            icon="/public/snacks.svg",
+        ),
+    ]
 
 
 @cl.on_settings_update
@@ -57,129 +80,23 @@ async def setup_agent(settings):
     # pick llm as per the model selected
     if settings["Model"].startswith("gpt"):
         llm = ChatOpenAI(model_name=settings["Model"], temperature=0.8, streaming=True)
+        LLM_MEMORY_SIZE = 25
     else:
-        llm = initialize_OCIGenAI(settings)
-
-    await cl.Avatar(
-        name="Nepomuk",
-        url="/public/logo_dark.png",
-    ).send()
-
-    message_history = ChatMessageHistory()
-
-    memory = ConversationBufferMemory(
-        memory_key="chat_history",
-        output_key="answer",
-        chat_memory=message_history,
-        return_messages=True,
-    )
-
-    # Define your system instruction
-    system_instruction = "You're a seasoned and experienced whisky expert. You're very knowledgeable about whisky. You're here to answer any whisky-related. You style of speaking resembles that of a seasoned barkeeper in a pub."
-
-    # Define your template with the system instruction
-    template = (
-        f"{system_instruction} "
-        "Combine the chat history and follow up question into "
-        "a standalone question. Chat History: {chat_history}"
-        "Follow up question: {question}"
-    )
-
-    # Create the prompt template
-    condense_question_prompt = PromptTemplate.from_template(template)
-
-    retriever = vs.as_retriever()
-    
-    # TODO: rewrite in LCEL 
-    # chain = condense_question_prompt | retriever | llm | memory | cl.Text()
-
-    chain = ConversationalRetrievalChain.from_llm(
-        llm,
-        chain_type="stuff",
-        retriever=retriever,
-        condense_question_prompt=condense_question_prompt,
-        memory=memory,
-        return_source_documents=True,
-        return_generated_question=True,
-        rephrase_question=True,
-    )
-    
-    cl.user_session.set("chain", chain)
-
-
-@cl.on_message
-async def on_message(message: cl.Message):
-    chain = cl.user_session.get("chain")  # type: ConversationalRetrievalChain
-    cb = cl.AsyncLangchainCallbackHandler()
-
-    res = await chain.acall(message.content, callbacks=[cb])
-    answer = res["answer"]
-    source_documents = res["source_documents"]  # type: List[Document]
-
-    text_elements = []  # type: List[cl.Text]
-
-    if SHOW_SOURCE:
-        if source_documents:
-            for source_idx, source_doc in enumerate(source_documents):
-
-                source_name = f"[{source_idx}]"
-                # Create the text element referenced in the message
-                text_elements.append(
-                    cl.Text(content=source_doc.page_content, name=source_name)
-                )
-            source_names = [text_el.name for text_el in text_elements]
-
-            if source_names:
-                answer += f"\nSources: {', '.join(source_names)}"
-                answer += ""
-            else:
-                answer += "\nNo sources found"
-
-    await cl.Message(content=answer, elements=text_elements, author="Nepomuk").send()
-
-
-
-
-def initialize_OCIGenAI(settings):
-    config = {
-            "user": os.environ["OCI_CONFIG_USER"],
-            "key_content": os.environ["OCI_CONFIG_KEY_CONTENT"],
-            "fingerprint": os.environ["OCI_CONFIG_FINGERPRINT"],
-            "tenancy": os.environ["OCI_CONFIG_TENANCY"],
-            "region": os.environ["OCI_CONFIG_REGION"],
-        }
-
-    validate_config(config)
-
-    llm = OCIGenAI(
+        llm = OCIGenAI(
             model_id=settings["Model"],
             service_endpoint=os.environ["OCI_GENAI_ENDPOINT"],
             compartment_id=os.environ["OCI_COMPARTMENT_ID"],
             model_kwargs={"max_tokens": 4000},
-            streaming=True,
+            # is_stream=True,
         )
-    
-    return llm
-
-
-def connect_to_oracle_vectorstore():
-    """
-    Connect to the Oracle database for embeddings.
-
-    Parameters:
-    None
-
-    Returns:
-    OracleVS: An instance of OracleVS, which is a vector store that uses Oracle's database for embeddings.
-
-    Raises:
-    Exception: If the connection to the Oracle database fails.
-
-    This function connects to the Oracle database using the provided environment variables for username, password, and connection string. It then creates an instance of OracleEmbeddings using the Oracle database as the provider and the specified model. Finally, it creates an instance of OracleVS using the embedding function, Oracle database client, table name, and distance strategy.
-    """
+        LLM_MEMORY_SIZE = 1
 
     try:
-        connection = oracledb.connect(user=os.environ["ADB_USERNAME"], password=os.environ["ADB_PASSWORD"], dsn=os.environ["ADB_CS"])
+        connection = oracledb.connect(
+            user=os.environ["ADB_USERNAME"],
+            password=os.environ["ADB_PASSWORD"],
+            dsn=os.environ["ADB_CS"],
+        )
         print("Connection successful!")
 
     except Exception as e:
@@ -194,7 +111,100 @@ def connect_to_oracle_vectorstore():
         table_name="reviews_vs",
         distance_strategy=DistanceStrategy.DOT_PRODUCT,
     )
-    return vs
+
+    if not cl.user_session.get("conversation_history"):
+        cl.user_session.set("conversation_history", [])
+
+    system_instruction = """
+    You're a seasoned and experienced whisky expert named Angus. You're very knowledgeable about whisky. 
+    You're here to answer any whisky-related questions. You will not answer any questions that are not related to Whisky or Scotland. 
+
+    If directly asked about where to buy whisky, you will recommend Scotch Badger shop, especially the online store at https://www.scotchbadger.maxian.io/. But don't overdo it. 
+    Mention the shop only when really asked for shopping recommendations!
+
+    You will only answer in prose text and might create tables. You will never return any programming code.
+
+    Use metric units for length, weight, volume and temperature. Use the 24-hour clock for time.
+
+    You style of speaking resembles that of a seasoned barkeeper badger in a pub. You are friendly and helpful. You love puns.
+    """
+
+    retriever = vs.as_retriever(search_type="mmr", search_kwargs={"k": 5})
+
+    contextualize_q_system_prompt = (
+        "Given a chat history and the latest user question "
+        "which might reference context in the chat history, "
+        "formulate a standalone question which can be understood "
+        "without the chat history. Do NOT answer the question, "
+        "just reformulate it if needed and otherwise return it as is."
+    )
+    contextualize_q_prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", contextualize_q_system_prompt),
+            ("human", "{input}"),
+            MessagesPlaceholder("chat_history"),
+        ]
+    )
+    history_aware_retriever = create_history_aware_retriever(
+        llm, retriever, contextualize_q_prompt
+    )
+
+    prompt = ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                system_instruction,
+            ),
+            MessagesPlaceholder("chat_history"),
+            ("human", "{context}"),
+            ("human", "{input}"),
+        ]
+    )
+
+    def format_docs(chunks):
+        return "\n\n".join(chunk.page_content for chunk in chunks)
+
+    chain = (
+        {
+            "context": history_aware_retriever | format_docs,
+            "input": RunnablePassthrough(),
+            "chat_history": RunnableLambda(
+                lambda h: cl.user_session.get("conversation_history")
+            ),
+        }
+        | prompt
+        | llm
+        | StrOutputParser()
+    )
+
+    cl.user_session.set("chain", chain)
 
 
+@cl.on_message
+async def on_message(message: cl.Message):
+    chain = cl.user_session.get("chain")
 
+    conversation_history = cl.user_session.get("conversation_history")
+    conversation_history.append(("human", message.content))
+
+    msg = cl.Message(content="", author="Angus")
+
+    async for chunk in chain.astream(
+        {
+            "session_id": cl.user_session.get("id"),
+            "input": message.content,
+        },
+        config=RunnableConfig(callbacks=[cl.LangchainCallbackHandler()]),
+    ):
+        await msg.stream_token(chunk)
+
+    conversation_history.append(("ai", msg.content))
+
+    # get only the last 10 messages from the conversation history
+    # and set it as the new conversation history
+    if len(conversation_history) > LLM_MEMORY_SIZE:
+        conversation_history = conversation_history[LLM_MEMORY_SIZE * -1 :]
+
+    cl.user_session.set("conversation_history", conversation_history)
+
+    await msg.send()
