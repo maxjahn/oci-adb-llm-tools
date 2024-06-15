@@ -163,7 +163,10 @@ cython_debug/
 
 docker/rag_app/Pipfile.lock
 docker/rag_app/Pipfile
+<<<<<<< Updated upstream
 docker/rag_app/.chainlit/config.toml
 scripts/create_vectorstore.py
 
+=======
+>>>>>>> Stashed changes
 Pipfile
