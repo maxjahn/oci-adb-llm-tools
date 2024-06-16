@@ -1,4 +1,4 @@
-chainlit
+chainlit >= 1.1.301
 langchain
 langchainhub
 langchain-core
