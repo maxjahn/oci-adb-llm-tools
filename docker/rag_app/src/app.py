@@ -96,7 +96,7 @@ async def setup_agent(settings):
         embedding_function=embedder,
         client=connection,
         table_name="reviews_vs",
-        distance_strategy=DistanceStrategy.DOT_PRODUCT,
+        distance_strategy=DistanceStrategy.COSINE,
     )
 
     if not cl.user_session.get("conversation_history"):
