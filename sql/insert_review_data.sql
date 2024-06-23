@@ -20,6 +20,27 @@ INSERT INTO REVIEWS (
 	FROM
 		SCOTCH_REVIEWS;
 
---where rownum <= 50;
+
+TRUNCATE TABLE STOCK;
+
+INSERT INTO STOCK (
+    REVIEW_ID,
+    ITEM_NAME,
+    CATEGORY,
+    LOCATION,
+    STOCK,
+    RESTOCK_DATE
+)
+    SELECT
+        ID                                        AS REVIEW_ID,
+        NAME                                      AS ITEM_NAME,
+        CATEGORY                                  AS CATEGORY,
+        'online'                                  AS LOCATION,
+        TRUNC(DBMS_RANDOM.VALUE(0, 20))           AS STOCK,
+        SYSDATE + TRUNC(DBMS_RANDOM.VALUE(0, 21)) AS RESTOCK_DATE
+    FROM
+        REVIEWS R
+    ORDER BY
+        DBMS_RANDOM.RANDOM FETCH FIRST 300 ROWS ONLY;
 
 COMMIT;
