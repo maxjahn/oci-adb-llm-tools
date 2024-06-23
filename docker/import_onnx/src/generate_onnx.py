@@ -47,7 +47,7 @@ for model in models:
     if model in pretrained_models:
         print("import pretrained mnodel " + model)
         em = EmbeddingModel(model_name=model)
-        em.export2file(re.sub("(-|\/)", model), output_dir="/opt/build/shared/models")
+        em.export2file(re.sub("(-|/)", "_", model), output_dir="/opt/build/shared/models")
     else:
         try:
             print(
@@ -64,4 +64,4 @@ for model in models:
             "text", max_seq_length=sequence_length[i], trust_remote_code=True
         )
         em = EmbeddingModel(model_name=model, config=config)
-        em.export2file(re.sub("(-|\/)", model), output_dir="/opt/build/shared/models")
+        em.export2file(re.sub("(-|/)", "_", model), output_dir="/opt/build/shared/models")
