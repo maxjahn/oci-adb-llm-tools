@@ -23,8 +23,10 @@ BEGIN
                 R.ID                                                                                    AS DOCUMENT_ID,
                 R.NAME                                                                                  AS DOCUMENT_NAME,
                 '*Whisky Name: '
-                ||R.NAME
-                ||'*\n'
+                    ||R.NAME
+                    ||'* \\n\\n *Category: '
+                    ||R.CATEGORY
+                    ||'* \\n\\n *Description: '
                 || JSON_VALUE(C.COLUMN_VALUE, '$.chunk_data')                                           AS TEXT,
                 JSON('{"document_id" : "'
                      || R.ID
