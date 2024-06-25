@@ -1,29 +1,39 @@
-
 TRUNCATE TABLE REVIEWS_VS;
+
 TRUNCATE TABLE REVIEWS;
+
 TRUNCATE TABLE STOCK;
+
 TRUNCATE TABLE PRODUCTS;
 
-insert into products
-(	name,
-	category,
-	rating) 
-select distinct name, category, rating from SCOTCH_REVIEWS;
+INSERT INTO PRODUCTS (
+    NAME,
+    CATEGORY
+)
+    SELECT
+        DISTINCT NAME,
+        CATEGORY
+    FROM
+        SCOTCH_REVIEWS;
 
 INSERT INTO REVIEWS (
     PROD_ID,
-	NAME,
-	CATEGORY,
-	DESCRIPTION
+    NAME,
+    RATING,
+    CATEGORY,
+    DESCRIPTION
 )
-	SELECT DISTINCT
-        p.ID as prod_id,
-        sr.NAME,
-		sr.CATEGORY,
-		sr.DESCRIPTION
-	FROM
-		SCOTCH_REVIEWS sr, PRODUCTS p
-        WHERE sr.name = p.name;
+    SELECT
+        DISTINCT P.PROD_ID      AS PROD_ID,
+        SR.NAME,
+        SR.RATING,
+        SR.CATEGORY,
+        SR.DESCRIPTION
+    FROM
+        SCOTCH_REVIEWS SR,
+        PRODUCTS       P
+    WHERE
+        SR.NAME = P.NAME;
 
 INSERT INTO STOCK (
     PROD_ID,
@@ -33,16 +43,16 @@ INSERT INTO STOCK (
     STOCK,
     RESTOCK_DATE
 )
-    SELECT DISTINCT
-        p.ID as prod_id,
-        p.NAME                                      AS ITEM_NAME,
-        p.CATEGORY                                  AS CATEGORY,
+    SELECT
+        DISTINCT P.PROD_ID                                 AS PROD_ID,
+        P.NAME                                    AS ITEM_NAME,
+        P.CATEGORY                                AS CATEGORY,
         'online'                                  AS LOCATION,
         TRUNC(DBMS_RANDOM.VALUE(0, 20))           AS STOCK,
         SYSDATE + TRUNC(DBMS_RANDOM.VALUE(0, 21)) AS RESTOCK_DATE
     FROM
-         products p
+        PRODUCTS P
     ORDER BY
         DBMS_RANDOM.RANDOM FETCH FIRST 300 ROWS ONLY;
 
-commit;
+COMMIT;

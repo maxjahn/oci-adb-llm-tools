@@ -24,16 +24,22 @@ BEGIN
             EMBEDDING_MODEL
         )
             SELECT
-                :NEW.ID                                                                                 AS DOCUMENT_ID,
-                :NEW.NAME                                                                               AS DOCUMENT_NAME,
-                '*Whisky Name: '
-                ||:NEW.NAME
-                || '*\n'
+                R.ID                                                                                    AS DOCUMENT_ID,
+                R.NAME                                                                                  AS DOCUMENT_NAME,
+                '**Whisky Name:** '
+                ||R.NAME
+                || CHR(13)
+                || CHR(10)
+                ||'**Category:** '
+                ||R.CATEGORY
+                || CHR(13)
+                || CHR(10)
+                ||'**Description:** '
                 || JSON_VALUE(C.COLUMN_VALUE, '$.chunk_data')                                           AS TEXT,
                 JSON('{"document_id" : "'
-                     || :NEW.ID
+                     || R.ID
                      || '", "_rowid" : "'
-                     || :NEW.ROWID
+                     || R.ROWID
                      || '"}')                                                                           AS METADATA,
                 DBMS_VECTOR.UTL_TO_EMBEDDING(JSON_VALUE(C.COLUMN_VALUE, '$.chunk_data'), JSON('{"provider":"database", "model":"'
                                                                                               || V_EMBEDDING_MODEL

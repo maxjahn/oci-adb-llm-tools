@@ -24,7 +24,7 @@ BEGIN
         VS.DOCUMENT_ID BETWEEN V_LOWER_LIMIT AND V_UPPER_LIMIT;
     COMMIT;
     V_INDEX := V_LOWER_LIMIT;
-    WHILE V_INDEX < V_UPPER_LIMIT LOOP
+    WHILE V_INDEX <= V_UPPER_LIMIT LOOP
         DBMS_OUTPUT.PUT_LINE('creating embeddings for IDs '
                              || V_INDEX
                              || ' to '
@@ -41,11 +41,15 @@ BEGIN
                 SELECT
                     R.ID                                                                                    AS DOCUMENT_ID,
                     R.NAME                                                                                  AS DOCUMENT_NAME,
-                    '*Whisky Name: '
+                    '**Whisky Name:** '
                     ||R.NAME
-                    ||'* \\n\\n *Category: '
+                    || CHR(13)
+                    || CHR(10)
+                    ||'**Category:** '
                     ||R.CATEGORY
-                    ||'* \\n\\n *Description: '
+                    || CHR(13)
+                    || CHR(10)
+                    ||'**Description:** '
                     || JSON_VALUE(C.COLUMN_VALUE, '$.chunk_data')                                           AS TEXT,
                     JSON('{"document_id" : "'
                          || R.ID
