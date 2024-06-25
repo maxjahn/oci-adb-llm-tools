@@ -1,6 +1,7 @@
 DECLARE
     V_INDEX           NUMBER := 0;
     V_STEP            NUMBER := 50;
+    V_LOWER_LIMIT     NUMBER := 0;
     V_UPPER_LIMIT     NUMBER := 2500;
     V_CODE            NUMBER;
     V_ERRM            VARCHAR2(64);
@@ -12,10 +13,17 @@ BEGIN
         CONFIG_EMBEDDINGS
     WHERE
         CONFIG = 'EMBEDDING_MODEL';
+    SELECT
+        MIN(ID),
+        MAX(ID) INTO V_LOWER_LIMIT,
+        V_UPPER_LIMIT
+    FROM
+        REVIEWS;
     DELETE FROM REVIEWS_VS VS
     WHERE
-        VS.DOCUMENT_ID BETWEEN V_INDEX AND V_UPPER_LIMIT;
+        VS.DOCUMENT_ID BETWEEN V_LOWER_LIMIT AND V_UPPER_LIMIT;
     COMMIT;
+    V_INDEX := V_LOWER_LIMIT;
     WHILE V_INDEX < V_UPPER_LIMIT LOOP
         DBMS_OUTPUT.PUT_LINE('creating embeddings for IDs '
                              || V_INDEX
