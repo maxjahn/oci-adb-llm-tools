@@ -78,6 +78,7 @@ async def setup_agent(settings):
     )
 
     try:
+        oracledb.init_oracle_client(lib_dir="/Users/maxjahn/src/oci/oci-adb-llm-tools/docker/rag_app/src/lib/instantclient_23_3")
         connection = oracledb.connect(
             user=os.environ["ADB_USERNAME"],
             password=os.environ["ADB_PASSWORD"],
