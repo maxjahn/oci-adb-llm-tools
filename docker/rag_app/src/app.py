@@ -22,7 +22,6 @@ import oracledb
 
 EMBEDDINGS_MODEL = "ALL_MPNET_BASE"
 
-
 @cl.on_chat_start
 async def start():
     settings = await cl.ChatSettings(
@@ -87,7 +86,7 @@ async def setup_agent(settings):
         print("Connection successful!")
 
     except Exception as e:
-        print("Connection failed!")
+        print("Connection failed! : ", e)
         quit()
 
     embedder_params = {"provider": "database", "model": EMBEDDINGS_MODEL}
