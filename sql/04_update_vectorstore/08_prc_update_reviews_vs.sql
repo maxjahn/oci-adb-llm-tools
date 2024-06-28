@@ -24,14 +24,10 @@ BEGIN
                 R.NAME                                                                                  AS DOCUMENT_NAME,
                 '**Whisky Name:** '
                 ||R.NAME
-                || CHR(13)
-                || CHR(10)
-                ||'**Category:** '
-                ||R.CATEGORY
-                || CHR(13)
                 || CHR(10)
                 ||'**Description:** '
-                || JSON_VALUE(C.COLUMN_VALUE, '$.chunk_data')                                           AS TEXT,
+                || JSON_VALUE(C.COLUMN_VALUE, '$.chunk_data')
+                   || CHR(10)                                                                           AS TEXT,
                 JSON('{"document_id" : "'
                      || R.ID
                      || '", "_rowid" : "'
