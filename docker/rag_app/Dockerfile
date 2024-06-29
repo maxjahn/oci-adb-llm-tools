@@ -15,8 +15,8 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-RUN wget https://download.oracle.com/otn_software/linux/instantclient/2340000/instantclient-basic-linux.x64-23.4.0.24.05.zip && \
-       unzip instantclient-basic-linux.x64-*
+RUN wget https://download.oracle.com/otn_software/linux/instantclient/instantclient-basic-linuxx64.zip && \
+       unzip instantclient-basic-linux*
 
 ENV OPENAI_API_KEY=""
 ENV ADB_CS=""
