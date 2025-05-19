@@ -4,7 +4,7 @@ matplotlib==3.7.2
 oracledb>=1.4.2
 scikit-learn>=1.2.1
 numpy>=1.26.4, <2
-setuptools==68.0.0
+setuptools==78.1.1
 onnxruntime==1.17.0
 onnxruntime-extensions==0.10.1
 torch==2.2.0
