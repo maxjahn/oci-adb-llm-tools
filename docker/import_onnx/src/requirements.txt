@@ -8,6 +8,6 @@ setuptools==68.0.0
 onnxruntime==1.17.0
 onnxruntime-extensions==0.10.1
 torch==2.2.0
-onnx==1.16.0
+onnx==1.21.0rc1
 transformers==4.38.1
 sentencepiece==0.2.0
